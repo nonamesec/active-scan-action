@@ -92,7 +92,7 @@ runs:
         set -euo pipefail
 
         # Fetch CLI image version from Active API
-  VERSION=$(curl -ks "${{ inputs.ACTIVE_API_URL }}/backend/version")
+        VERSION=$(curl -ks "${{ inputs.ACTIVE_API_URL }}/backend/version")
         echo "Using active-cli image tag: $VERSION"
 
         docker run \
