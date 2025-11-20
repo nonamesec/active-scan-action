@@ -2,68 +2,68 @@ name: "Active Scan"
 description: "Run Noname Active CLI scan against the current repository"
 author: "Noname Security"
 inputs:
-  active-registry-url:
+  ACTIVE_REGISTRY_URL:
     description: "Active Docker registry URL"
     required: true
-  active-registry-user:
+  ACTIVE_REGISTRY_USER:
     description: "Active Docker registry username"
     required: true
-  active-registry-password:
+  ACTIVE_REGISTRY_PASSWORD:
     description: "Active Docker registry password / JSON key (use a secret)"
     required: true
-  active-api-url:
+  ACTIVE_API_URL:
     description: "Active API URL (e.g. https://mimic-clean-14323.nonamesec.com/active)"
     required: true
-  active-api-token:
+  ACTIVE_API_TOKEN:
     description: "Active API token (JWT) – pass via secret"
     required: true
-  active-backend-uri:
+  ACTIVE_BACKEND_URI:
     description: "Active backend URI"
     required: true
-  test-group-id:
+  TEST_GROUP_ID:
     description: "Test group ID"
     required: true
-  environment-name:
+  ENVIRONMENT_NAME:
     description: "Environment / branch name"
     required: false
     default: "${{ github.ref_name }}"
-  active-config-file-path:
+  ACTIVE_CONFIG_FILE_PATH:
     description: "Path inside container to config file (mounted from ./akamai)"
     required: false
     default: "/akamai/environment.json"
-  verbose:
+  VERBOSE:
     description: "Enable verbose output"
     required: false
     default: "false"
-  analyze:
+  ANALYZE:
     description: "Enable analyze mode"
     required: false
     default: "false"
-  severity-threshold:
+  SEVERITY_THRESHOLD:
     description: "Severity threshold (e.g. HIGH, MEDIUM)"
     required: false
     default: ""
-  issue-threshold:
+  ISSUE_THRESHOLD:
     description: "Issue threshold (string)"
     required: false
     default: ""
-  category-threshold:
+  CATEGORY_THRESHOLD:
     description: "Category threshold (string)"
     required: false
     default: ""
-  concurrency:
+  CONCURRENCY:
     description: "Concurrency level (number)"
     required: false
     default: ""
-  timeout:
+  TIMEOUT:
     description: "Timeout in seconds (number)"
     required: false
     default: ""
-  proxy:
+  PROXY:
     description: "HTTP proxy URL"
     required: false
     default: ""
-  backend-proxy:
+  BACKEND_PROXY:
     description: "Backend HTTP proxy URL"
     required: false
     default: ""
@@ -82,9 +82,9 @@ runs:
       shell: bash
       run: |
         set -euo pipefail
-        docker login "${{ inputs.active-registry-url }}" \
-          -u "${{ inputs.active-registry-user }}" \
-          -p "${{ inputs.active-registry-password }}"
+        docker login "${{ inputs.ACTIVE_REGISTRY_URL }}" \
+          -u "${{ inputs.ACTIVE_REGISTRY_USER }}" \
+          -p "${{ inputs.ACTIVE_REGISTRY_PASSWORD }}"
 
     - name: Run Active CLI scan
       shell: bash
@@ -92,32 +92,32 @@ runs:
         set -euo pipefail
 
         # Fetch CLI image version from Active API
-        VERSION=$(curl -ks "${{ inputs.active-api-url }}/backend/version")
+  VERSION=$(curl -ks "${{ inputs.ACTIVE_API_URL }}/backend/version")
         echo "Using active-cli image tag: $VERSION"
 
         docker run \
           --network=host \
-          -e ACTIVE_CONFIG_FILE_PATH="${{ inputs.active-config-file-path }}" \
-          -e ACTIVE_BACKEND_URI="${{ inputs.active-backend-uri }}" \
-          $(if [[ -n "${{ inputs.backend-proxy }}" ]]; then \
-             if [[ "${{ inputs.backend-proxy }}" == http:* ]]; then \
-               echo "-e ACTIVE_REMOTE_WORKER_HTTP_PROXY='${{ inputs.backend-proxy }}'"; \
+          -e ACTIVE_CONFIG_FILE_PATH="${{ inputs.ACTIVE_CONFIG_FILE_PATH }}" \
+          -e ACTIVE_BACKEND_URI="${{ inputs.ACTIVE_BACKEND_URI }}" \
+          $(if [[ -n "${{ inputs.BACKEND_PROXY }}" ]]; then \
+             if [[ "${{ inputs.BACKEND_PROXY }}" == http:* ]]; then \
+               echo "-e ACTIVE_REMOTE_WORKER_HTTP_PROXY='${{ inputs.BACKEND_PROXY }}'"; \
              else \
-               echo "-e ACTIVE_REMOTE_WORKER_HTTPS_PROXY='${{ inputs.backend-proxy }}'"; \
+               echo "-e ACTIVE_REMOTE_WORKER_HTTPS_PROXY='${{ inputs.BACKEND_PROXY }}'"; \
              fi; \
            fi) \
           -v "$GITHUB_WORKSPACE/akamai:/akamai" \
-          "${{ inputs.active-registry-url }}/active-cli:${VERSION}" \
+          "${{ inputs.ACTIVE_REGISTRY_URL }}/active-cli:${VERSION}" \
           scan \
-          --api-url="${{ inputs.active-api-url }}" \
-          --api-token="${{ inputs.active-api-token }}" \
-          --test-group-id="${{ inputs.test-group-id }}" \
-          --branch-name="${{ inputs.environment-name }}" \
-          $([[ "${{ inputs.verbose }}" == "true" ]] && echo "--verbose") \
-          $([[ "${{ inputs.analyze }}" == "true" ]] && echo "--analyze") \
-          $([[ -n "${{ inputs.severity-threshold }}" ]] && echo "--severity-threshold='${{ inputs.severity-threshold }}'") \
-          $([[ -n "${{ inputs.issue-threshold }}" ]] && echo "--issue-threshold='${{ inputs.issue-threshold }}'") \
-          $([[ -n "${{ inputs.category-threshold }}" ]] && echo "--category-threshold='${{ inputs.category-threshold }}'") \
-          $([[ -n "${{ inputs.concurrency }}" ]] && echo "--concurrency='${{ inputs.concurrency }}'") \
-          $([[ -n "${{ inputs.timeout }}" ]] && echo "--timeout='${{ inputs.timeout }}'") \
-          $([[ -n "${{ inputs.proxy }}" ]] && echo "--proxy='${{ inputs.proxy }}'")
+          --api-url="${{ inputs.ACTIVE_API_URL }}" \
+          --api-token="${{ inputs.ACTIVE_API_TOKEN }}" \
+          --test-group-id="${{ inputs.TEST_GROUP_ID }}" \
+          --branch-name="${{ inputs.ENVIRONMENT_NAME }}" \
+          $([[ "${{ inputs.VERBOSE }}" == "true" ]] && echo "--verbose") \
+          $([[ "${{ inputs.ANALYZE }}" == "true" ]] && echo "--analyze") \
+          $([[ -n "${{ inputs.SEVERITY_THRESHOLD }}" ]] && echo "--severity-threshold='${{ inputs.SEVERITY_THRESHOLD }}'") \
+          $([[ -n "${{ inputs.ISSUE_THRESHOLD }}" ]] && echo "--issue-threshold='${{ inputs.ISSUE_THRESHOLD }}'") \
+          $([[ -n "${{ inputs.CATEGORY_THRESHOLD }}" ]] && echo "--category-threshold='${{ inputs.CATEGORY_THRESHOLD }}'") \
+          $([[ -n "${{ inputs.CONCURRENCY }}" ]] && echo "--concurrency='${{ inputs.CONCURRENCY }}'") \
+          $([[ -n "${{ inputs.TIMEOUT }}" ]] && echo "--timeout='${{ inputs.TIMEOUT }}'") \
+          $([[ -n "${{ inputs.PROXY }}" ]] && echo "--proxy='${{ inputs.PROXY }}'")
