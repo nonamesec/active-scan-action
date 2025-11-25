@@ -39,11 +39,11 @@ inputs:
     description: "Enable analyze mode"
     required: false
     default: "false"
-  SEVERITY_THRESHOLD:
+  ACTIVE_SEVERITY_THRESHOLD:
     description: "Severity threshold (e.g. HIGH, MEDIUM)"
     required: false
     default: ""
-  ISSUE_THRESHOLD:
+  ACTIVE_ISSUE_THRESHOLD:
     description: "Issue threshold (string)"
     required: false
     default: ""
@@ -51,19 +51,19 @@ inputs:
     description: "Category threshold (string)"
     required: false
     default: ""
-  CONCURRENCY:
+  ACTIVE_RATE_LIMIT:
     description: "Concurrency level (number)"
     required: false
     default: ""
-  TIMEOUT:
+  ACTIVE_SCAN_TIMEOUT:
     description: "Timeout in seconds (number)"
     required: false
     default: ""
-  PROXY:
+  ACTIVE_SCANNER_PROXY:
     description: "HTTP proxy URL"
     required: false
     default: ""
-  BACKEND_PROXY:
+  ACTIVE_BACKEND_PROXY:
     description: "Backend HTTP proxy URL"
     required: false
     default: ""
@@ -115,9 +115,9 @@ runs:
           --branch-name="${{ inputs.ENVIRONMENT_NAME }}" \
           $([[ "${{ inputs.VERBOSE }}" == "true" ]] && echo "--verbose") \
           $([[ "${{ inputs.ANALYZE }}" == "true" ]] && echo "--analyze") \
-          $([[ -n "${{ inputs.SEVERITY_THRESHOLD }}" ]] && echo "--severity-threshold='${{ inputs.SEVERITY_THRESHOLD }}'") \
-          $([[ -n "${{ inputs.ISSUE_THRESHOLD }}" ]] && echo "--issue-threshold='${{ inputs.ISSUE_THRESHOLD }}'") \
-          $([[ -n "${{ inputs.CATEGORY_THRESHOLD }}" ]] && echo "--category-threshold='${{ inputs.CATEGORY_THRESHOLD }}'") \
-          $([[ -n "${{ inputs.CONCURRENCY }}" ]] && echo "--concurrency='${{ inputs.CONCURRENCY }}'") \
-          $([[ -n "${{ inputs.TIMEOUT }}" ]] && echo "--timeout='${{ inputs.TIMEOUT }}'") \
-          $([[ -n "${{ inputs.PROXY }}" ]] && echo "--proxy='${{ inputs.PROXY }}'")
+          $([[ -n "${{ inputs.ACTIVE_SEVERITY_THRESHOLD }}" ]] && echo "--severity-threshold='${{ inputs.ACTIVE_SEVERITY_THRESHOLD }}'") \
+          $([[ -n "${{ inputs.ACTIVE_ISSUE_THRESHOLD }}" ]] && echo "--issue-threshold='${{ inputs.ACTIVE_ISSUE_THRESHOLD }}'") \
+          $([[ -n "${{ inputs.ACTIVE_CATEGORY_THRESHOLD }}" ]] && echo "--category-threshold='${{ inputs.ACTIVE_CATEGORY_THRESHOLD }}'") \
+          $([[ -n "${{ inputs.ACTIVE_RATE_LIMIT }}" ]] && echo "--concurrency='${{ inputs.ACTIVE_RATE_LIMIT }}'") \
+          $([[ -n "${{ inputs.ACTIVE_SCAN_TIMEOUT }}" ]] && echo "--timeout='${{ inputs.ACTIVE_SCAN_TIMEOUT }}'") \
+          $([[ -n "${{ inputs.ACTIVE_SCANNER_PROXY }}" ]] && echo "--proxy='${{ inputs.ACTIVE_SCANNER_PROXY }}'")
