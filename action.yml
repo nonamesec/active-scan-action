@@ -89,7 +89,7 @@ runs:
     - name: Run Active CLI scan
       shell: bash
       run: |
-        set -euo pipefail
+        set -eo pipefail
 
         # Fetch CLI image version from Active API
         VERSION=$(curl -ks "${{ inputs.ACTIVE_API_URL }}/backend/version")
