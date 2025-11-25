@@ -116,8 +116,8 @@ runs:
           $([[ "${{ inputs.VERBOSE }}" == "true" ]] && echo "--verbose") \
           $([[ "${{ inputs.ANALYZE }}" == "true" ]] && echo "--analyze") \
           $([[ -n "${{ inputs.ACTIVE_SEVERITY_THRESHOLD }}" ]] && echo "--severity-threshold=\"${{ inputs.ACTIVE_SEVERITY_THRESHOLD }}\"") \
-          $([[ -n "${{ inputs.ACTIVE_ISSUE_THRESHOLD }}" ]] && echo "--issue-threshold=\"${{ inputs.ACTIVE_ISSUE_THRESHOLD }}\"") \
-          $([[ -n "${{ inputs.ACTIVE_CATEGORY_THRESHOLD }}" ]] && echo "--category-threshold=\"${{ inputs.ACTIVE_CATEGORY_THRESHOLD }}\"") \
+          "$([[ -n "${{ inputs.ACTIVE_ISSUE_THRESHOLD }}" ]] && echo --issue-threshold="${{ inputs.ACTIVE_ISSUE_THRESHOLD }}")" \
+          "$([[ -n "${{ inputs.ACTIVE_CATEGORY_THRESHOLD }}" ]] && echo --category-threshold="${{ inputs.ACTIVE_CATEGORY_THRESHOLD }}")" \
           $([[ -n "${{ inputs.ACTIVE_RATE_LIMIT }}" ]] && echo "--concurrency=\"${{ inputs.ACTIVE_RATE_LIMIT }}\"") \
           $([[ -n "${{ inputs.ACTIVE_SCAN_TIMEOUT }}" ]] && echo "--timeout=\"${{ inputs.ACTIVE_SCAN_TIMEOUT }}\"") \
           $([[ -n "${{ inputs.ACTIVE_SCANNER_PROXY }}" ]] && echo "--proxy=\"${{ inputs.ACTIVE_SCANNER_PROXY }}\"")
