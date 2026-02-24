@@ -23,10 +23,14 @@ inputs:
   TEST_GROUP_ID:
     description: "Test group ID"
     required: true
-  ENVIRONMENT_NAME:
-    description: "Environment / branch name"
-    required: false
+  BRANCH_NAME:
+    description: "Branch name"
+    required: true
     default: "${{ github.ref_name }}"
+  ENV_ID:
+    description: "Environment ID (string)"
+    required: true
+    default: ""
   ACTIVE_CONFIG_FILE_PATH:
     description: "Path inside container to config file (mounted from ./akamai)"
     required: false
@@ -112,7 +116,8 @@ runs:
           --api-url="${{ inputs.ACTIVE_API_URL }}" \
           --api-token="${{ inputs.ACTIVE_API_TOKEN }}" \
           --test-group-id="${{ inputs.TEST_GROUP_ID }}" \
-          --branch-name="${{ inputs.ENVIRONMENT_NAME }}" \
+          --env-id="${{ inputs.ENV_ID }}" \
+          --branch-name="${{ inputs.BRANCH_NAME }}" \
           $([[ "${{ inputs.VERBOSE }}" == "true" ]] && echo "--verbose") \
           $([[ "${{ inputs.ANALYZE }}" == "true" ]] && echo "--analyze") \
           $([[ -n "${{ inputs.ACTIVE_SEVERITY_THRESHOLD }}" ]] && echo "--severity-threshold=${{ inputs.ACTIVE_SEVERITY_THRESHOLD }}") \
