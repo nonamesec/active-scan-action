@@ -31,10 +31,6 @@ inputs:
     description: "Environment ID (string)"
     required: true
     default: ""
-  ACTIVE_CONFIG_FILE_PATH:
-    description: "Path inside container to config file (mounted from ./akamai)"
-    required: false
-    default: "/akamai/environment.json"
   VERBOSE:
     description: "Enable verbose output"
     required: false
@@ -101,7 +97,6 @@ runs:
 
         docker run \
           --network=host \
-          -e ACTIVE_CONFIG_FILE_PATH="${{ inputs.ACTIVE_CONFIG_FILE_PATH }}" \
           -e ACTIVE_BACKEND_URI="${{ inputs.ACTIVE_BACKEND_URI }}" \
           $(if [[ -n "${{ inputs.ACTIVE_BACKEND_PROXY }}" ]]; then \
             if [[ "${{ inputs.ACTIVE_BACKEND_PROXY }}" == http:* ]]; then \
