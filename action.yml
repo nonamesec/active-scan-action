@@ -99,13 +99,13 @@ runs:
           --network=host \
           -e ACTIVE_CONFIG_FILE_PATH="${{ inputs.ACTIVE_CONFIG_FILE_PATH }}" \
           -e ACTIVE_BACKEND_URI="${{ inputs.ACTIVE_BACKEND_URI }}" \
-          $(if [[ -n "${{ inputs.BACKEND_PROXY }}" ]]; then \
-             if [[ "${{ inputs.BACKEND_PROXY }}" == http:* ]]; then \
-               echo "-e ACTIVE_REMOTE_WORKER_HTTP_PROXY='${{ inputs.BACKEND_PROXY }}'"; \
-             else \
-               echo "-e ACTIVE_REMOTE_WORKER_HTTPS_PROXY='${{ inputs.BACKEND_PROXY }}'"; \
-             fi; \
-           fi) \
+          $(if [[ -n "${{ inputs.ACTIVE_BACKEND_PROXY }}" ]]; then \
+            if [[ "${{ inputs.ACTIVE_BACKEND_PROXY }}" == http:* ]]; then \
+              echo "-e ACTIVE_REMOTE_WORKER_HTTP_PROXY='${{ inputs.ACTIVE_BACKEND_PROXY }}'"; \
+            else \
+              echo "-e ACTIVE_REMOTE_WORKER_HTTPS_PROXY='${{ inputs.ACTIVE_BACKEND_PROXY }}'"; \
+            fi; \
+          fi) \
           -v "$GITHUB_WORKSPACE/akamai:/akamai" \
           "${{ inputs.ACTIVE_REGISTRY_URL }}/active-cli:${VERSION}" \
           scan \
@@ -115,9 +115,10 @@ runs:
           --branch-name="${{ inputs.ENVIRONMENT_NAME }}" \
           $([[ "${{ inputs.VERBOSE }}" == "true" ]] && echo "--verbose") \
           $([[ "${{ inputs.ANALYZE }}" == "true" ]] && echo "--analyze") \
-          $([[ -n "${{ inputs.ACTIVE_SEVERITY_THRESHOLD }}" ]] && echo "--severity-threshold=\"${{ inputs.ACTIVE_SEVERITY_THRESHOLD }}\"") \
-          "$([[ -n "${{ inputs.ACTIVE_ISSUE_THRESHOLD }}" ]] && echo --issue-threshold="${{ inputs.ACTIVE_ISSUE_THRESHOLD }}")" \
-          "$([[ -n "${{ inputs.ACTIVE_CATEGORY_THRESHOLD }}" ]] && echo --category-threshold="${{ inputs.ACTIVE_CATEGORY_THRESHOLD }}")" \
-          $([[ -n "${{ inputs.ACTIVE_RATE_LIMIT }}" ]] && echo "--concurrency=\"${{ inputs.ACTIVE_RATE_LIMIT }}\"") \
-          $([[ -n "${{ inputs.ACTIVE_SCAN_TIMEOUT }}" ]] && echo "--timeout=\"${{ inputs.ACTIVE_SCAN_TIMEOUT }}\"") \
-          $([[ -n "${{ inputs.ACTIVE_SCANNER_PROXY }}" ]] && echo "--proxy=\"${{ inputs.ACTIVE_SCANNER_PROXY }}\"")
+          $([[ -n "${{ inputs.ACTIVE_SEVERITY_THRESHOLD }}" ]] && echo "--severity-threshold=${{ inputs.ACTIVE_SEVERITY_THRESHOLD }}") \
+          $([[ -n "${{ inputs.ACTIVE_ISSUE_THRESHOLD }}" ]] && echo "--issue-threshold=${{ inputs.ACTIVE_ISSUE_THRESHOLD }}") \
+          $([[ -n "${{ inputs.CATEGORY_THRESHOLD }}" ]] && echo "--category-threshold=${{ inputs.CATEGORY_THRESHOLD }}") \
+          $([[ -n "${{ inputs.ACTIVE_RATE_LIMIT }}" ]] && echo "--concurrency=${{ inputs.ACTIVE_RATE_LIMIT }}") \
+          $([[ -n "${{ inputs.ACTIVE_SCAN_TIMEOUT }}" ]] && echo "--timeout=${{ inputs.ACTIVE_SCAN_TIMEOUT }}") \
+          $([[ -n "${{ inputs.ACTIVE_SCANNER_PROXY }}" ]] && echo "--proxy=${{ inputs.ACTIVE_SCANNER_PROXY }}")
+
