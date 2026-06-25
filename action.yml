@@ -67,6 +67,10 @@ inputs:
     description: "Backend HTTP proxy URL"
     required: false
     default: ""
+  USE_ZAP:
+    description: "Use the active-cli-zap image instead of active-cli"
+    required: false
+    default: "false"
 
 runs:
   using: "composite"
@@ -95,6 +99,12 @@ runs:
         VERSION=$(curl -ks "${{ inputs.ACTIVE_API_URL }}/backend/version")
         echo "Using active-cli image tag: $VERSION"
 
+        if [[ "${{ inputs.USE_ZAP }}" == "true" ]]; then
+          IMAGE_NAME="active-cli-zap"
+        else
+          IMAGE_NAME="active-cli"
+        fi
+
         docker run \
           --network=host \
           -e ACTIVE_BACKEND_URI="${{ inputs.ACTIVE_BACKEND_URI }}" \
@@ -106,7 +116,7 @@ runs:
             fi; \
           fi) \
           -v "$GITHUB_WORKSPACE/akamai:/akamai" \
-          "${{ inputs.ACTIVE_REGISTRY_URL }}/active-cli:${VERSION}" \
+          "${{ inputs.ACTIVE_REGISTRY_URL }}/${IMAGE_NAME}:${VERSION}" \
           scan \
           --api-url="${{ inputs.ACTIVE_API_URL }}" \
           --api-token="${{ inputs.ACTIVE_API_TOKEN }}" \
