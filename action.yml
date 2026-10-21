@@ -1,87 +1,88 @@
-name: Active Scan
-description: Run Noname Active CLI scan against the current repository
-author: Noname Security
+name: "Active Scan"
+description: "Run Noname Active CLI scan against the current repository"
+author: "Noname Security"
 inputs:
   ACTIVE_REGISTRY_URL:
-    description: Active Docker registry URL
+    description: "Active Docker registry URL"
     required: true
   ACTIVE_REGISTRY_USER:
-    description: Active Docker registry username
+    description: "Active Docker registry username"
     required: true
   ACTIVE_REGISTRY_PASSWORD:
-    description: Active Docker registry password / JSON key (use a secret)
+    description: "Active Docker registry password / JSON key (use a secret)"
     required: true
   ACTIVE_API_URL:
-    description: Active API URL (e.g. https://mimic-clean-14323.nonamesec.com/active)
+    description: "Active API URL (e.g. https://mimic-clean-14323.nonamesec.com/active)"
     required: true
   ACTIVE_API_TOKEN:
-    description: Legacy Active API token (JWT). Required unless both Core CLI credentials are provided.
+    description: "Active API token (JWT); required unless Core CLI credentials are provided"
     required: false
-    default: ''
+    default: ""
   CORE_CLI_CLIENT_ID:
-    description: Core CLI client ID. Supply together with CORE_CLI_CLIENT_SECRET.
+    description: "Core CLI client ID; provide together with CORE_CLI_CLIENT_SECRET"
     required: false
-    default: ''
+    default: ""
   CORE_CLI_CLIENT_SECRET:
-    description: Core CLI client secret. Supply together with CORE_CLI_CLIENT_ID using a GitHub secret.
+    description: "Core CLI client secret; provide together with CORE_CLI_CLIENT_ID via a secret"
     required: false
-    default: ''
+    default: ""
   ACTIVE_BACKEND_URI:
-    description: Active backend URI
+    description: "Active backend URI"
     required: true
   TEST_GROUP_ID:
-    description: Test group ID
+    description: "Test group ID"
     required: true
   BRANCH_NAME:
-    description: Branch name
+    description: "Branch name"
     required: true
-    default: ${{ github.ref_name }}
+    default: "${{ github.ref_name }}"
   ENV_ID:
-    description: Environment ID (string)
+    description: "Environment ID (string)"
     required: true
-    default: ''
+    default: ""
   VERBOSE:
-    description: Enable verbose output
+    description: "Enable verbose output"
     required: false
-    default: 'false'
+    default: "false"
   ANALYZE:
-    description: Enable analyze mode
+    description: "Enable analyze mode"
     required: false
-    default: 'false'
+    default: "false"
   ACTIVE_SEVERITY_THRESHOLD:
-    description: Severity threshold (e.g. HIGH, MEDIUM)
+    description: "Severity threshold (e.g. HIGH, MEDIUM)"
     required: false
-    default: ''
+    default: ""
   ACTIVE_ISSUE_THRESHOLD:
-    description: Issue threshold (string)
+    description: "Issue threshold (string)"
     required: false
-    default: ''
+    default: ""
   CATEGORY_THRESHOLD:
-    description: Category threshold (string)
+    description: "Category threshold (string)"
     required: false
-    default: ''
+    default: ""
   ACTIVE_RATE_LIMIT:
-    description: Concurrency level (number)
+    description: "Concurrency level (number)"
     required: false
-    default: ''
+    default: ""
   ACTIVE_SCAN_TIMEOUT:
-    description: Timeout in seconds (number)
+    description: "Timeout in seconds (number)"
     required: false
-    default: ''
+    default: ""
   ACTIVE_SCANNER_PROXY:
-    description: HTTP proxy URL
+    description: "HTTP proxy URL"
     required: false
-    default: ''
+    default: ""
   ACTIVE_BACKEND_PROXY:
-    description: Backend HTTP proxy URL
+    description: "Backend HTTP proxy URL"
     required: false
-    default: ''
+    default: ""
   USE_ZAP:
-    description: Use the active-cli-zap image instead of active-cli
+    description: "Use the active-cli-zap image instead of active-cli"
     required: false
-    default: 'false'
+    default: "false"
+
 runs:
-  using: composite
+  using: "composite"
   steps:
     - name: Log versions / debug
       shell: bash
@@ -89,122 +90,74 @@ runs:
         echo "Running Active scan..."
         echo "Repository: $GITHUB_REPOSITORY"
         echo "Branch / ref: $GITHUB_REF_NAME"
+
     - name: Docker login to Active registry
       shell: bash
       run: |
         set -euo pipefail
-        printf '%s' "$ACTIVE_REGISTRY_PASSWORD" | docker login "$ACTIVE_REGISTRY_URL" \
-          --username "$ACTIVE_REGISTRY_USER" \
-          --password-stdin
-      env:
-        ACTIVE_REGISTRY_URL: ${{ inputs.ACTIVE_REGISTRY_URL }}
-        ACTIVE_REGISTRY_USER: ${{ inputs.ACTIVE_REGISTRY_USER }}
-        ACTIVE_REGISTRY_PASSWORD: ${{ inputs.ACTIVE_REGISTRY_PASSWORD }}
+        docker login "${{ inputs.ACTIVE_REGISTRY_URL }}" \
+          -u "${{ inputs.ACTIVE_REGISTRY_USER }}" \
+          -p "${{ inputs.ACTIVE_REGISTRY_PASSWORD }}"
+
     - name: Run Active CLI scan
       shell: bash
+      env:
+        ACTIVE_API_TOKEN: ${{ inputs.ACTIVE_API_TOKEN }}
+        CORE_CLI_CLIENT_ID: ${{ inputs.CORE_CLI_CLIENT_ID }}
+        CORE_CLI_CLIENT_SECRET: ${{ inputs.CORE_CLI_CLIENT_SECRET }}
       run: |
-        set -euo pipefail
-        
-        dockerArgs=(
-          --network=host
-          -e ACTIVE_BACKEND_URI
-          -v "$GITHUB_WORKSPACE/akamai:/akamai"
-        )
-        scanArgs=(
-          scan
-          "--api-url=$ACTIVE_API_URL"
-          "--test-group-id=$TEST_GROUP_ID"
-          "--env-id=$ENV_ID"
-          "--branch-name=$BRANCH_NAME"
-        )
-        
-        # A complete Core credential pair takes precedence over the legacy token.
+        set -eo pipefail
+
+        dockerAuthArgs=()
+        cliAuthArgs=()
         if [[ -n "$CORE_CLI_CLIENT_ID" || -n "$CORE_CLI_CLIENT_SECRET" ]]; then
           if [[ -z "$CORE_CLI_CLIENT_ID" || -z "$CORE_CLI_CLIENT_SECRET" ]]; then
             echo "::error::CORE_CLI_CLIENT_ID and CORE_CLI_CLIENT_SECRET must be provided together."
             exit 1
           fi
-          dockerArgs+=(-e CORE_CLI_CLIENT_ID -e CORE_CLI_CLIENT_SECRET)
-          echo "Using Core CLI client credentials."
+          dockerAuthArgs=(-e CORE_CLI_CLIENT_ID -e CORE_CLI_CLIENT_SECRET)
         elif [[ -n "$ACTIVE_API_TOKEN" ]]; then
-          # Keep the explicit flag for older CLI images that lack token env support.
-          scanArgs+=("--api-token=$ACTIVE_API_TOKEN")
-          echo "Using legacy API token."
+          cliAuthArgs=("--api-token=$ACTIVE_API_TOKEN")
         else
           echo "::error::Provide ACTIVE_API_TOKEN or both CORE_CLI_CLIENT_ID and CORE_CLI_CLIENT_SECRET."
           exit 1
         fi
-        
-        if [[ -n "$ACTIVE_BACKEND_PROXY" ]]; then
-          if [[ "$ACTIVE_BACKEND_PROXY" == http:* ]]; then
-            export ACTIVE_REMOTE_WORKER_HTTP_PROXY="$ACTIVE_BACKEND_PROXY"
-            dockerArgs+=(-e ACTIVE_REMOTE_WORKER_HTTP_PROXY)
-          else
-            export ACTIVE_REMOTE_WORKER_HTTPS_PROXY="$ACTIVE_BACKEND_PROXY"
-            dockerArgs+=(-e ACTIVE_REMOTE_WORKER_HTTPS_PROXY)
-          fi
+
+        # Fetch CLI image version from Active API
+        VERSION=$(curl -ks "${{ inputs.ACTIVE_API_URL }}/backend/version")
+        echo "Using active-cli image tag: $VERSION"
+
+        if [[ "${{ inputs.USE_ZAP }}" == "true" ]]; then
+          IMAGE_NAME="active-cli-zap"
+        else
+          IMAGE_NAME="active-cli"
         fi
-        
-        if [[ "$VERBOSE" == "true" ]]; then
-          scanArgs+=(--verbose)
-        fi
-        if [[ "$ANALYZE" == "true" ]]; then
-          scanArgs+=(--analyze)
-        fi
-        if [[ -n "$ACTIVE_SEVERITY_THRESHOLD" ]]; then
-          scanArgs+=("--severity-threshold=$ACTIVE_SEVERITY_THRESHOLD")
-        fi
-        if [[ -n "$ACTIVE_ISSUE_THRESHOLD" ]]; then
-          scanArgs+=("--issue-threshold=$ACTIVE_ISSUE_THRESHOLD")
-        fi
-        if [[ -n "$CATEGORY_THRESHOLD" ]]; then
-          scanArgs+=("--category-threshold=$CATEGORY_THRESHOLD")
-        fi
-        if [[ -n "$ACTIVE_RATE_LIMIT" ]]; then
-          scanArgs+=("--concurrency=$ACTIVE_RATE_LIMIT")
-        fi
-        if [[ -n "$ACTIVE_SCAN_TIMEOUT" ]]; then
-          scanArgs+=("--timeout=$ACTIVE_SCAN_TIMEOUT")
-        fi
-        if [[ -n "$ACTIVE_SCANNER_PROXY" ]]; then
-          scanArgs+=("--proxy=$ACTIVE_SCANNER_PROXY")
-        fi
-        
-        # Fetch the matching CLI image tag; fail on HTTP errors or invalid responses.
-        version=$(curl --fail --silent --show-error \
-          --connect-timeout 30 --max-time 60 \
-          "${ACTIVE_API_URL%/}/backend/version")
-        if [[ ! "$version" =~ ^[a-zA-Z0-9_][a-zA-Z0-9_.-]{0,127}$ ]]; then
-          echo "::error::Active API returned an invalid CLI image tag."
-          exit 1
-        fi
-        printf 'Using active-cli image tag: %s\n' "$version"
-        
-        imageName="active-cli"
-        if [[ "$USE_ZAP" == "true" ]]; then
-          imageName="active-cli-zap"
-        fi
-        
-        docker run "${dockerArgs[@]}" \
-          "${ACTIVE_REGISTRY_URL%/}/$imageName:$version" \
-          "${scanArgs[@]}"
-      env:
-        ACTIVE_REGISTRY_URL: ${{ inputs.ACTIVE_REGISTRY_URL }}
-        ACTIVE_API_URL: ${{ inputs.ACTIVE_API_URL }}
-        ACTIVE_API_TOKEN: ${{ inputs.ACTIVE_API_TOKEN }}
-        CORE_CLI_CLIENT_ID: ${{ inputs.CORE_CLI_CLIENT_ID }}
-        CORE_CLI_CLIENT_SECRET: ${{ inputs.CORE_CLI_CLIENT_SECRET }}
-        ACTIVE_BACKEND_URI: ${{ inputs.ACTIVE_BACKEND_URI }}
-        TEST_GROUP_ID: ${{ inputs.TEST_GROUP_ID }}
-        BRANCH_NAME: ${{ inputs.BRANCH_NAME }}
-        ENV_ID: ${{ inputs.ENV_ID }}
-        VERBOSE: ${{ inputs.VERBOSE }}
-        ANALYZE: ${{ inputs.ANALYZE }}
-        ACTIVE_SEVERITY_THRESHOLD: ${{ inputs.ACTIVE_SEVERITY_THRESHOLD }}
-        ACTIVE_ISSUE_THRESHOLD: ${{ inputs.ACTIVE_ISSUE_THRESHOLD }}
-        CATEGORY_THRESHOLD: ${{ inputs.CATEGORY_THRESHOLD }}
-        ACTIVE_RATE_LIMIT: ${{ inputs.ACTIVE_RATE_LIMIT }}
-        ACTIVE_SCAN_TIMEOUT: ${{ inputs.ACTIVE_SCAN_TIMEOUT }}
-        ACTIVE_SCANNER_PROXY: ${{ inputs.ACTIVE_SCANNER_PROXY }}
-        ACTIVE_BACKEND_PROXY: ${{ inputs.ACTIVE_BACKEND_PROXY }}
-        USE_ZAP: ${{ inputs.USE_ZAP }}
+
+        docker run \
+          --network=host \
+          "${dockerAuthArgs[@]}" \
+          -e ACTIVE_BACKEND_URI="${{ inputs.ACTIVE_BACKEND_URI }}" \
+          $(if [[ -n "${{ inputs.ACTIVE_BACKEND_PROXY }}" ]]; then \
+            if [[ "${{ inputs.ACTIVE_BACKEND_PROXY }}" == http:* ]]; then \
+              echo "-e ACTIVE_REMOTE_WORKER_HTTP_PROXY='${{ inputs.ACTIVE_BACKEND_PROXY }}'"; \
+            else \
+              echo "-e ACTIVE_REMOTE_WORKER_HTTPS_PROXY='${{ inputs.ACTIVE_BACKEND_PROXY }}'"; \
+            fi; \
+          fi) \
+          -v "$GITHUB_WORKSPACE/akamai:/akamai" \
+          "${{ inputs.ACTIVE_REGISTRY_URL }}/${IMAGE_NAME}:${VERSION}" \
+          scan \
+          --api-url="${{ inputs.ACTIVE_API_URL }}" \
+          "${cliAuthArgs[@]}" \
+          --test-group-id="${{ inputs.TEST_GROUP_ID }}" \
+          --env-id="${{ inputs.ENV_ID }}" \
+          --branch-name="${{ inputs.BRANCH_NAME }}" \
+          $([[ "${{ inputs.VERBOSE }}" == "true" ]] && echo "--verbose") \
+          $([[ "${{ inputs.ANALYZE }}" == "true" ]] && echo "--analyze") \
+          $([[ -n "${{ inputs.ACTIVE_SEVERITY_THRESHOLD }}" ]] && echo "--severity-threshold=${{ inputs.ACTIVE_SEVERITY_THRESHOLD }}") \
+          $([[ -n "${{ inputs.ACTIVE_ISSUE_THRESHOLD }}" ]] && echo "--issue-threshold=${{ inputs.ACTIVE_ISSUE_THRESHOLD }}") \
+          $([[ -n "${{ inputs.CATEGORY_THRESHOLD }}" ]] && echo "--category-threshold=${{ inputs.CATEGORY_THRESHOLD }}") \
+          $([[ -n "${{ inputs.ACTIVE_RATE_LIMIT }}" ]] && echo "--concurrency=${{ inputs.ACTIVE_RATE_LIMIT }}") \
+          $([[ -n "${{ inputs.ACTIVE_SCAN_TIMEOUT }}" ]] && echo "--timeout=${{ inputs.ACTIVE_SCAN_TIMEOUT }}") \
+          $([[ -n "${{ inputs.ACTIVE_SCANNER_PROXY }}" ]] && echo "--proxy=${{ inputs.ACTIVE_SCANNER_PROXY }}")
+
