@@ -15,8 +15,17 @@ inputs:
     description: "Active API URL (e.g. https://mimic-clean-14323.nonamesec.com/active)"
     required: true
   ACTIVE_API_TOKEN:
-    description: "Active API token (JWT) – pass via secret"
-    required: true
+    description: "Active API token (JWT); required unless Core CLI credentials are provided"
+    required: false
+    default: ""
+  CORE_CLI_CLIENT_ID:
+    description: "Core CLI client ID; provide together with CORE_CLI_CLIENT_SECRET"
+    required: false
+    default: ""
+  CORE_CLI_CLIENT_SECRET:
+    description: "Core CLI client secret; provide together with CORE_CLI_CLIENT_ID via a secret"
+    required: false
+    default: ""
   ACTIVE_BACKEND_URI:
     description: "Active backend URI"
     required: true
@@ -92,8 +101,27 @@ runs:
 
     - name: Run Active CLI scan
       shell: bash
+      env:
+        ACTIVE_API_TOKEN: ${{ inputs.ACTIVE_API_TOKEN }}
+        CORE_CLI_CLIENT_ID: ${{ inputs.CORE_CLI_CLIENT_ID }}
+        CORE_CLI_CLIENT_SECRET: ${{ inputs.CORE_CLI_CLIENT_SECRET }}
       run: |
         set -eo pipefail
+
+        dockerAuthArgs=()
+        cliAuthArgs=()
+        if [[ -n "$CORE_CLI_CLIENT_ID" || -n "$CORE_CLI_CLIENT_SECRET" ]]; then
+          if [[ -z "$CORE_CLI_CLIENT_ID" || -z "$CORE_CLI_CLIENT_SECRET" ]]; then
+            echo "::error::CORE_CLI_CLIENT_ID and CORE_CLI_CLIENT_SECRET must be provided together."
+            exit 1
+          fi
+          dockerAuthArgs=(-e CORE_CLI_CLIENT_ID -e CORE_CLI_CLIENT_SECRET)
+        elif [[ -n "$ACTIVE_API_TOKEN" ]]; then
+          cliAuthArgs=("--api-token=$ACTIVE_API_TOKEN")
+        else
+          echo "::error::Provide ACTIVE_API_TOKEN or both CORE_CLI_CLIENT_ID and CORE_CLI_CLIENT_SECRET."
+          exit 1
+        fi
 
         # Fetch CLI image version from Active API
         VERSION=$(curl -ks "${{ inputs.ACTIVE_API_URL }}/backend/version")
@@ -107,6 +135,7 @@ runs:
 
         docker run \
           --network=host \
+          "${dockerAuthArgs[@]}" \
           -e ACTIVE_BACKEND_URI="${{ inputs.ACTIVE_BACKEND_URI }}" \
           $(if [[ -n "${{ inputs.ACTIVE_BACKEND_PROXY }}" ]]; then \
             if [[ "${{ inputs.ACTIVE_BACKEND_PROXY }}" == http:* ]]; then \
@@ -119,7 +148,7 @@ runs:
           "${{ inputs.ACTIVE_REGISTRY_URL }}/${IMAGE_NAME}:${VERSION}" \
           scan \
           --api-url="${{ inputs.ACTIVE_API_URL }}" \
-          --api-token="${{ inputs.ACTIVE_API_TOKEN }}" \
+          "${cliAuthArgs[@]}" \
           --test-group-id="${{ inputs.TEST_GROUP_ID }}" \
           --env-id="${{ inputs.ENV_ID }}" \
           --branch-name="${{ inputs.BRANCH_NAME }}" \
